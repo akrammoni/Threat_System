@@ -1,4 +1,7 @@
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
+
+from app.auth.require_auth import require_auth
+from app.auth.require_role import require_role
 
 from app.models.threat import Threat
 from app.models.threat_intelligence import ThreatIntelligence
@@ -11,45 +14,50 @@ from app.services.threat_intelligence_service import (
 
 from app.exceptions.validation_error import ValidationError
 
-from app.auth.require_auth import require_auth
-from app.auth.require_role import require_role
-
 
 app = Flask(__name__)
 
-service = ThreatService()
+
+# =========================
+# SERVICES
+# =========================
+
+threat_service = ThreatService()
 auth_service = AuthService()
 threat_intelligence_service = ThreatIntelligenceService()
 
 
-@app.route("/")
+# =========================
+# HEALTH CHECK
+# =========================
+
+@app.route("/", methods=["GET"])
 def home():
 
-    return "Threat System API is running!"
+    return "Threat System API is running!", 200
 
 
 # =========================
 # AUTHENTICATION
 # =========================
 
-@app.route(
-    "/register",
-    methods=["POST"]
-)
+@app.route("/register", methods=["POST"])
 def register():
 
     try:
 
         data = request.get_json()
 
+        username = data.get("username")
+        password = data.get("password")
+
         auth_service.register(
-            data["username"],
-            data["password"]
+            username,
+            password
         )
 
         return jsonify({
-            "message":
-            "User registered successfully"
+            "message": "User registered successfully"
         }), 201
 
     except ValidationError as e:
@@ -61,24 +69,23 @@ def register():
     except Exception:
 
         return jsonify({
-            "error":
-            "Internal Server Error"
+            "error": "Internal Server Error"
         }), 500
 
 
-@app.route(
-    "/login",
-    methods=["POST"]
-)
+@app.route("/login", methods=["POST"])
 def login():
 
     try:
 
         data = request.get_json()
 
+        username = data.get("username")
+        password = data.get("password")
+
         token = auth_service.login(
-            data["username"],
-            data["password"]
+            username,
+            password
         )
 
         return jsonify({
@@ -94,8 +101,7 @@ def login():
     except Exception:
 
         return jsonify({
-            "error":
-            "Internal Server Error"
+            "error": "Internal Server Error"
         }), 500
 
 
@@ -103,10 +109,43 @@ def login():
 # THREATS
 # =========================
 
-@app.route(
-    "/threats",
-    methods=["POST"]
+@app.route("/threats", methods=["GET"])
+@require_auth
+@require_role(
+    "admin",
+    "analyst",
+    "viewer"
 )
+def get_threats():
+
+    try:
+
+        threats = threat_service.get_all()
+
+        results = []
+
+        for threat in threats:
+
+            results.append({
+                "id": threat[0],
+                "name": threat[1],
+                "threat_type": threat[2],
+                "impact": threat[3],
+                "solution": threat[4],
+                "location": threat[5],
+                "status": threat[6]
+            })
+
+        return jsonify(results), 200
+
+    except Exception:
+
+        return jsonify({
+            "error": "Internal Server Error"
+        }), 500
+
+
+@app.route("/threats", methods=["POST"])
 @require_auth
 @require_role(
     "admin",
@@ -119,19 +158,18 @@ def create_threat():
         data = request.get_json()
 
         threat = Threat(
-            data["name"],
-            data["threat_type"],
-            data["impact"],
-            data["solution"],
-            data["location"],
-            data["status"]
+            name=data["name"],
+            threat_type=data["threat_type"],
+            impact=data.get("impact"),
+            solution=data.get("solution"),
+            location=data.get("location"),
+            status=data.get("status")
         )
 
-        service.create(threat)
+        threat_service.create(threat)
 
         return jsonify({
-            "message":
-            "Threat created successfully"
+            "message": "Threat created successfully"
         }), 201
 
     except ValidationError as e:
@@ -143,143 +181,7 @@ def create_threat():
     except Exception:
 
         return jsonify({
-            "error":
-            "Internal Server Error"
-        }), 500
-
-
-@app.route(
-    "/threats",
-    methods=["GET"]
-)
-@require_auth
-@require_role(
-    "admin",
-    "analyst",
-    "viewer"
-)
-def get_threats():
-
-    threats = service.get_all()
-
-    results = []
-
-    for threat in threats:
-
-        results.append({
-            "id": threat[0],
-            "name": threat[1],
-            "threat_type": threat[2],
-            "impact": threat[3],
-            "solution": threat[4],
-            "location": threat[5],
-            "status": threat[6]
-        })
-
-    return jsonify(results)
-
-
-@app.route(
-    "/threats/<int:threat_id>",
-    methods=["GET"]
-)
-@require_auth
-@require_role(
-    "admin",
-    "analyst",
-    "viewer"
-)
-def get_threat(threat_id):
-
-    threat = service.get_by_id(
-        threat_id
-    )
-
-    if threat is None:
-
-        return jsonify({
-            "message":
-            "Threat not found"
-        }), 404
-
-    return jsonify({
-
-        "id": threat[0],
-        "name": threat[1],
-        "threat_type": threat[2],
-        "impact": threat[3],
-        "solution": threat[4],
-        "location": threat[5],
-        "status": threat[6]
-
-    })
-
-
-@app.route(
-    "/threats/<int:threat_id>",
-    methods=["PUT"]
-)
-@require_auth
-@require_role(
-    "admin",
-    "analyst"
-)
-def update_threat(threat_id):
-
-    try:
-
-        data = request.get_json()
-
-        service.update_status(
-            threat_id,
-            data["status"]
-        )
-
-        return jsonify({
-            "message":
-            "Threat updated successfully"
-        })
-
-    except ValidationError as e:
-
-        return jsonify({
-            "error": str(e)
-        }), 400
-
-    except Exception:
-
-        return jsonify({
-            "error":
-            "Internal Server Error"
-        }), 500
-
-
-@app.route(
-    "/threats/<int:threat_id>",
-    methods=["DELETE"]
-)
-@require_auth
-@require_role(
-    "admin"
-)
-def delete_threat(threat_id):
-
-    try:
-
-        service.delete(
-            threat_id
-        )
-
-        return jsonify({
-            "message":
-            "Threat deleted successfully"
-        })
-
-    except Exception:
-
-        return jsonify({
-            "error":
-            "Internal Server Error"
+            "error": "Internal Server Error"
         }), 500
 
 
@@ -326,7 +228,7 @@ def create_threat_intelligence():
 
         return jsonify({
             "error":
-            f"Missing field: {e.args[0]}"
+            f"Missing required field: {e.args[0]}"
         }), 400
 
     except Exception:
@@ -349,36 +251,44 @@ def create_threat_intelligence():
 )
 def get_threat_intelligence():
 
-    intelligence = (
-        threat_intelligence_service.get_all()
-    )
+    try:
 
-    results = []
+        intelligence = (
+            threat_intelligence_service
+            .get_all()
+        )
 
-    for item in intelligence:
+        results = []
 
-        results.append({
-            "id": item[0],
-            "indicator": item[1],
-            "indicator_type": item[2],
-            "threat_type": item[3],
-            "severity": item[4],
-            "source": item[5],
-            "description": item[6],
-            "first_seen": item[7],
-            "last_seen": item[8],
-            "created_at": item[9]
-        })
+        for item in intelligence:
 
-    return jsonify(results), 200
+            results.append({
+                "id": item[0],
+                "indicator": item[1],
+                "indicator_type": item[2],
+                "threat_type": item[3],
+                "severity": item[4],
+                "source": item[5],
+                "description": item[6],
+                "first_seen": item[7],
+                "last_seen": item[8],
+                "created_at": item[9]
+            })
+
+        return jsonify(results), 200
+
+    except Exception:
+
+        return jsonify({
+            "error":
+            "Internal Server Error"
+        }), 500
 
 
-if __name__ == "__main__":
+# =========================
+# URLHAUS THREAT INTELLIGENCE SYNC
+# =========================
 
-    app.run(
-        host="0.0.0.0",
-        port=5000
-    )
 @app.route(
     "/threat-intelligence/sync",
     methods=["POST"]
@@ -394,7 +304,9 @@ def sync_threat_intelligence():
 
         imported = (
             threat_intelligence_service
-            .sync_urlhaus(limit=10)
+            .sync_urlhaus(
+                limit=10
+            )
         )
 
         return jsonify({
@@ -411,3 +323,15 @@ def sync_threat_intelligence():
             "Threat intelligence sync failed",
             "details": str(e)
         }), 500
+
+
+# =========================
+# RUN APPLICATION
+# =========================
+
+if __name__ == "__main__":
+
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
