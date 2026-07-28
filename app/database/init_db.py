@@ -32,6 +32,21 @@ def create_tables():
         ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'viewer';
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS threat_intelligence (
+            id SERIAL PRIMARY KEY,
+            indicator VARCHAR(255) NOT NULL,
+            indicator_type VARCHAR(50),
+            threat_type VARCHAR(100),
+            severity VARCHAR(50),
+            source VARCHAR(100),
+            description TEXT,
+            first_seen TIMESTAMP,
+            last_seen TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
     connection.commit()
 
     cursor.close()

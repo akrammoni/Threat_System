@@ -379,3 +379,35 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=5000
     )
+@app.route(
+    "/threat-intelligence/sync",
+    methods=["POST"]
+)
+@require_auth
+@require_role(
+    "admin",
+    "analyst"
+)
+def sync_threat_intelligence():
+
+    try:
+
+        imported = (
+            threat_intelligence_service
+            .sync_urlhaus(limit=10)
+        )
+
+        return jsonify({
+            "message":
+            "Threat intelligence synced successfully",
+            "source": "URLhaus",
+            "imported": imported
+        }), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "error":
+            "Threat intelligence sync failed",
+            "details": str(e)
+        }), 500
