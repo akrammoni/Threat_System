@@ -40,15 +40,15 @@ class ThreatIntelligenceService:
 
         response.raise_for_status()
 
-        print("URLHAUS STATUS:", response.status_code)
-        print("URLHAUS RESPONSE LENGTH:", len(response.text))
-        print("URLHAUS FIRST 100 CHARS:", response.text[:100])
+        lines = [
+            line for line in response.text.splitlines()
+            if not line.startswith("#")
+            and line.strip()
+        ]
+
+        reader = csv.DictReader(lines)
 
         results = []
-
-        reader = csv.DictReader(
-            io.StringIO(response.text)
-        )
 
         for item in reader:
 
@@ -72,7 +72,9 @@ class ThreatIntelligenceService:
                 first_seen=item.get(
                     "dateadded"
                 ),
-                last_seen=None
+                last_seen=item.get(
+                    "last_online"
+                )
             )
 
             results.append(intelligence)
@@ -93,11 +95,9 @@ class ThreatIntelligenceService:
         imported = 0
 
         for intelligence in intelligence_items:
-
             self.repository.create(
                 intelligence
             )
-
             imported += 1
 
         return imported
