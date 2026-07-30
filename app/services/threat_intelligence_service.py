@@ -50,7 +50,13 @@ class ThreatIntelligenceService:
             and line.strip()
         ]
 
-        reader = csv.DictReader(lines)
+        fieldnames = [
+            "id", "dateadded", "url", "url_status",
+            "last_online", "threat", "tags",
+            "urlhaus_link", "reporter"
+        ]
+
+        reader = csv.DictReader(lines, fieldnames=fieldnames)
 
         results = []
 
