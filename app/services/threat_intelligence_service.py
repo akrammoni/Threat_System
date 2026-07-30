@@ -1,3 +1,7 @@
+import csv
+import io
+import os
+
 import requests
 
 from app.models.threat_intelligence import ThreatIntelligence
@@ -19,21 +23,38 @@ class ThreatIntelligenceService:
 
     def fetch_urlhaus_data(self, limit=10):
 
+        auth_key = os.getenv("URLHAUS_AUTH_KEY")
+
+        if not auth_key:
+            raise Exception("URLHAUS_AUTH_KEY is not configured")
+
+        url = (
+            "https://urlhaus-api.abuse.ch/v2/files/exports/"
+            f"{auth_key}/recent.csv"
+        )
+
         response = requests.get(
-            "https://urlhaus-api.abuse.ch/v1/urls/recent/",
-            timeout=10
+            url,
+            timeout=30
         )
 
         response.raise_for_status()
 
-        data = response.json()
-
         results = []
 
-        for item in data.get("urls", [])[:limit]:
+        reader = csv.DictReader(
+            io.StringIO(response.text)
+        )
+
+        for item in reader:
+
+            indicator = item.get("url")
+
+            if not indicator:
+                continue
 
             intelligence = ThreatIntelligence(
-                indicator=item.get("url"),
+                indicator=indicator,
                 indicator_type="url",
                 threat_type=item.get(
                     "threat",
@@ -51,6 +72,9 @@ class ThreatIntelligenceService:
             )
 
             results.append(intelligence)
+
+            if len(results) >= limit:
+                break
 
         return results
 
