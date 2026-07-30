@@ -38,6 +38,10 @@ class ThreatIntelligenceService:
             timeout=30
         )
 
+        print("URLHAUS STATUS:", response.status_code, flush=True)
+        print("URLHAUS RESPONSE LENGTH:", len(response.text), flush=True)
+        print("URLHAUS FIRST 100 CHARS:", repr(response.text[:100]), flush=True)
+
         response.raise_for_status()
 
         lines = [
@@ -82,7 +86,7 @@ class ThreatIntelligenceService:
             if len(results) >= limit:
                 break
 
-        print("URLHAUS RECORDS PARSED:", len(results))
+        print("URLHAUS RECORDS PARSED:", len(results), flush=True)
 
         return results
 
