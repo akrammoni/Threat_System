@@ -40,6 +40,10 @@ class ThreatIntelligenceService:
 
         response.raise_for_status()
 
+        print("URLHAUS STATUS:", response.status_code)
+        print("URLHAUS RESPONSE LENGTH:", len(response.text))
+        print("URLHAUS FIRST 100 CHARS:", response.text[:100])
+
         results = []
 
         reader = csv.DictReader(
@@ -75,6 +79,8 @@ class ThreatIntelligenceService:
 
             if len(results) >= limit:
                 break
+
+        print("URLHAUS RECORDS PARSED:", len(results))
 
         return results
 
