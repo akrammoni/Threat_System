@@ -17,6 +17,9 @@ from app.exceptions.validation_error import ValidationError
 
 app = Flask(__name__)
 @app.route("/ui")
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 def ui():
     return render_template("login.html")
 
