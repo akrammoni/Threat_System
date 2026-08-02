@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 
 from app.auth.require_auth import require_auth
 from app.auth.require_role import require_role
@@ -16,6 +16,9 @@ from app.exceptions.validation_error import ValidationError
 
 
 app = Flask(__name__)
+@app.route("/ui")
+def ui():
+    return render_template("login.html")
 
 
 # =========================
