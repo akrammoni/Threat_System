@@ -82,9 +82,9 @@ class ThreatIntelligenceService:
                 first_seen=item.get(
                     "dateadded"
                 ),
-                last_seen=item.get(
+                last_seen=(item.get(
                     "last_online"
-                )
+                ) or None)
             )
 
             results.append(intelligence)
