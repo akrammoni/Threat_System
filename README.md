@@ -64,3 +64,36 @@ The next major milestone is building the web UI on top of the existing API.
 After that, development will pause so I can study and understand the complete system I've built from end to end.
 
 This project is being developed as a learning project focused on understanding backend engineering, security, APIs, databases, deployment, and threat intelligence.
+## 🚀 Current Progress
+
+The web UI milestone is now complete.
+
+### 🛡️ Working Features
+
+- 🔐 JWT authentication
+- 👥 Role-based access control
+- 🌐 URLhaus threat-intelligence ingestion
+- 🗃️ PostgreSQL persistence
+- ⚡ Flask REST API
+- 📊 Authenticated web dashboard
+- 🔴 Threat severity display
+- 📡 Online/offline indicator status
+- ☁️ Render deployment
+
+### 🔄 End-to-End Pipeline
+
+URLhaus
+→ Threat Intelligence Service
+→ PostgreSQL
+→ Flask REST API
+→ JWT Authentication
+→ Web Dashboard
+
+The deployed system is successfully importing and displaying real URLhaus threat intelligence through the authenticated dashboard.
+
+### 📈 Current Status
+
+The core backend, database, authentication, threat-intelligence pipeline, deployment, and initial web UI are now working together.
+
+Development will pause here so the complete system can be studied and understood end to end before adding further functionality.
+
